@@ -248,11 +248,7 @@
       <input type="password" id="ghToken" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:8px; color:var(--text); font-family:monospace;" placeholder="ghp_xxxxxxxxxxxx">
       <div style="font-size:0.7rem; color:var(--muted); margin-top:4px;">Generate at <a href="https://github.com/settings/tokens/new?scopes=gist&description=SSC+Study+Tracker" target="_blank" style="color:var(--accent2)">GitHub Tokens</a></div>
     </div>
-    <div style="margin-bottom: 16px;">
-      <label style="font-size:0.8rem; color:var(--muted); display:block; margin-bottom:4px;">Gist ID</label>
-      <input type="text" id="gistId" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:8px; color:var(--text); font-family:monospace;">
-    </div>
-    <div style="display:flex; justify-content:flex-end; gap:8px;">
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
       <button class="btn-small" style="background:var(--card2); border:1px solid var(--border);" onclick="closeSettings()">Cancel</button>
       <button class="btn-primary" style="padding: 8px 16px;" onclick="saveSettings()">Save</button>
     </div>
@@ -499,7 +495,6 @@ const PUBLIC_GIST_ID = 'c01cb36ae8354fcdad5fa45cdcf05f9f';
 
 function openSettings() {
   document.getElementById('ghToken').value = load('ssc_gh_token', '');
-  document.getElementById('gistId').value = load('ssc_gist_id', PUBLIC_GIST_ID);
   document.getElementById('settingsModal').style.display = 'flex';
 }
 
@@ -509,15 +504,13 @@ function closeSettings() {
 
 function saveSettings() {
   save('ssc_gh_token', document.getElementById('ghToken').value.trim());
-  save('ssc_gist_id', document.getElementById('gistId').value.trim());
   closeSettings();
   alert('Settings saved!');
 }
 
 async function syncToCloud() {
   const token = load('ssc_gh_token', '');
-  const gistId = load('ssc_gist_id', PUBLIC_GIST_ID);
-  if (!token || !gistId) return alert('Please configure Settings (⚙️) first and provide your GitHub token!');
+  if (!token) return alert('Please configure Settings (⚙️) first and provide your GitHub token!');
 
   const btn = event.currentTarget;
   const oldText = btn.innerText;
@@ -527,7 +520,7 @@ async function syncToCloud() {
   const payload = { files: { [GIST_FILENAME]: { content: JSON.stringify(data) } } };
 
   try {
-    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+    const res = await fetch(`https://api.github.com/gists/${PUBLIC_GIST_ID}`, {
       method: 'PATCH',
       headers: {
         'Authorization': `token ${token}`,
@@ -544,19 +537,14 @@ async function syncToCloud() {
 }
 
 async function pullFromCloud() {
-  const token = load('ssc_gh_token', '');
-  const gistId = load('ssc_gist_id', PUBLIC_GIST_ID);
-  if (!gistId) return alert('Please configure Settings (⚙️) first!');
-
   const btn = event.currentTarget;
   const oldText = btn.innerText;
   btn.innerText = 'Pulling...';
 
   try {
     const headers = { 'Accept': 'application/vnd.github.v3+json' };
-    if (token) headers['Authorization'] = `token ${token}`;
     
-    const res = await fetch(`https://api.github.com/gists/${gistId}?t=${Date.now()}`, { headers, cache: 'no-store' });
+    const res = await fetch(`https://api.github.com/gists/${PUBLIC_GIST_ID}?t=${Date.now()}`, { headers, cache: 'no-store' });
     if (!res.ok) throw new Error(await res.text());
     
     const gist = await res.json();
@@ -580,8 +568,7 @@ async function pullFromCloud() {
 
 async function autoLoadFromCloud() {
   try {
-    const gistId = load('ssc_gist_id', PUBLIC_GIST_ID);
-    const res = await fetch(`https://api.github.com/gists/${gistId}?t=${Date.now()}`, { cache: 'no-store' });
+    const res = await fetch(`https://api.github.com/gists/${PUBLIC_GIST_ID}?t=${Date.now()}`, { cache: 'no-store' });
     if (!res.ok) return;
     const gist = await res.json();
     const content = gist.files[GIST_FILENAME]?.content;
