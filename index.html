@@ -137,8 +137,9 @@
   <div class="header-right">
     <div class="date-badge" id="todayDate">Today</div>
     <div class="streak-badge">🔥 <span id="streakCount">0</span> Day Streak</div>
-    <button class="btn-small" style="background:var(--accent2);color:var(--bg);margin-left:8px;" onclick="exportData()">Export</button>
-    <button class="btn-small" style="background:var(--card2);border:1px solid var(--border);" onclick="importData()">Import</button>
+    <button class="btn-small" style="background:var(--accent2);color:var(--bg);margin-left:8px;" onclick="syncToCloud()">☁️ Push</button>
+    <button class="btn-small" style="background:var(--card2);border:1px solid var(--border);" onclick="pullFromCloud()">☁️ Pull</button>
+    <button class="btn-small" style="background:var(--card2);border:1px solid var(--border);" onclick="openSettings()">⚙️</button>
   </div>
 </div>
 
@@ -233,6 +234,29 @@
 
   </div>
 
+</div>
+
+<!-- SETTINGS MODAL -->
+<div id="settingsModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+  <div class="card" style="width: 400px; max-width: 90%; background: var(--surface);">
+    <div class="card-header">
+      <h3 class="section-title" style="margin:0;">⚙️ Cloud Sync Settings</h3>
+      <button class="btn-small" style="background:transparent; color:var(--muted); font-size:1.2rem;" onclick="closeSettings()">×</button>
+    </div>
+    <div style="margin-bottom: 12px;">
+      <label style="font-size:0.8rem; color:var(--muted); display:block; margin-bottom:4px;">GitHub Token (with 'gist' scope)</label>
+      <input type="password" id="ghToken" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:8px; color:var(--text); font-family:monospace;" placeholder="ghp_xxxxxxxxxxxx">
+      <div style="font-size:0.7rem; color:var(--muted); margin-top:4px;">Generate at <a href="https://github.com/settings/tokens/new?scopes=gist&description=SSC+Study+Tracker" target="_blank" style="color:var(--accent2)">GitHub Tokens</a></div>
+    </div>
+    <div style="margin-bottom: 16px;">
+      <label style="font-size:0.8rem; color:var(--muted); display:block; margin-bottom:4px;">Gist ID</label>
+      <input type="text" id="gistId" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:8px; color:var(--text); font-family:monospace;">
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:8px;">
+      <button class="btn-small" style="background:var(--card2); border:1px solid var(--border);" onclick="closeSettings()">Cancel</button>
+      <button class="btn-primary" style="padding: 8px 16px;" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -469,45 +493,87 @@ function renderCalendar() {
   }
 }
 
-// ===================== EXPORT/IMPORT =====================
-function exportData() {
-  const data = {
-    progress: progress,
-    logs: logs,
-    mocks: mocks,
-    checkData: checkData,
-    studyDays: studyDays
-  };
-  try {
-    const str = btoa(encodeURIComponent(JSON.stringify(data)));
-    navigator.clipboard.writeText(str).then(() => {
-      alert('Data copied to clipboard! Send this code to your phone/tablet and paste it in the Import section.');
-    }).catch(err => {
-      prompt('Copy this code:', str);
-    });
-  } catch(e) {
-    alert('Error exporting data: ' + e.message);
-  }
+// ===================== CLOUD SYNC =====================
+const GIST_FILENAME = 'sync.json';
+
+function openSettings() {
+  document.getElementById('ghToken').value = load('ssc_gh_token', '');
+  document.getElementById('gistId').value = load('ssc_gist_id', 'a8b7f303403ea86250949ff9f300b993');
+  document.getElementById('settingsModal').style.display = 'flex';
 }
 
-function importData() {
-  const str = prompt('Paste your sync code here:');
-  if (!str) return;
+function closeSettings() {
+  document.getElementById('settingsModal').style.display = 'none';
+}
+
+function saveSettings() {
+  save('ssc_gh_token', document.getElementById('ghToken').value.trim());
+  save('ssc_gist_id', document.getElementById('gistId').value.trim());
+  closeSettings();
+  alert('Settings saved!');
+}
+
+async function syncToCloud() {
+  const token = load('ssc_gh_token', '');
+  const gistId = load('ssc_gist_id', 'a8b7f303403ea86250949ff9f300b993');
+  if (!token || !gistId) return alert('Please configure Settings (⚙️) first and provide your GitHub token!');
+
+  const btn = event.currentTarget;
+  const oldText = btn.innerText;
+  btn.innerText = 'Pushing...';
+
+  const data = { progress, logs, mocks, checkData, studyDays };
+  const payload = { files: { [GIST_FILENAME]: { content: JSON.stringify(data) } } };
+
   try {
-    const data = JSON.parse(decodeURIComponent(atob(str)));
-    if (data && typeof data === 'object') {
-      if (data.progress) save('ssc_progress', data.progress);
-      if (data.logs) save('ssc_logs', data.logs);
-      if (data.mocks) save('ssc_mocks', data.mocks);
-      if (data.checkData) save('ssc_checks', data.checkData);
-      if (data.studyDays) save('ssc_days', data.studyDays);
-      alert('Data imported successfully! Reloading...');
-      location.reload();
-    } else {
-      alert('Invalid sync code format.');
-    }
-  } catch(e) {
-    alert('Error reading sync code. Make sure you copied it entirely.');
+    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) alert('☁️ Progress securely pushed to Cloud!');
+    else throw new Error(await res.text());
+  } catch (e) {
+    alert('Error syncing to cloud. Check token or gist ID. ' + e.message);
+  }
+  btn.innerText = oldText;
+}
+
+async function pullFromCloud() {
+  const token = load('ssc_gh_token', '');
+  const gistId = load('ssc_gist_id', 'a8b7f303403ea86250949ff9f300b993');
+  if (!gistId) return alert('Please configure Settings (⚙️) first!');
+
+  const btn = event.currentTarget;
+  const oldText = btn.innerText;
+  btn.innerText = 'Pulling...';
+
+  try {
+    const headers = { 'Accept': 'application/vnd.github.v3+json' };
+    if (token) headers['Authorization'] = `token ${token}`;
+    
+    const res = await fetch(`https://api.github.com/gists/${gistId}?t=${Date.now()}`, { headers, cache: 'no-store' });
+    if (!res.ok) throw new Error(await res.text());
+    
+    const gist = await res.json();
+    const content = gist.files[GIST_FILENAME]?.content;
+    if (!content) throw new Error("sync.json not found in gist");
+
+    const data = JSON.parse(content);
+    if (data.progress) save('ssc_progress', data.progress);
+    if (data.logs) save('ssc_logs', data.logs);
+    if (data.mocks) save('ssc_mocks', data.mocks);
+    if (data.checkData) save('ssc_checks', data.checkData);
+    if (data.studyDays) save('ssc_days', data.studyDays);
+    
+    alert('☁️ Progress loaded from Cloud! Reloading...');
+    location.reload();
+  } catch (e) {
+    alert('Error pulling from cloud: ' + e.message);
+    btn.innerText = oldText;
   }
 }
 
