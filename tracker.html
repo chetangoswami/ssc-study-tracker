@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SSC Study Tracker 2026 – Chetan</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080b14;
+    --surface: #0f1220;
+    --card: #141828;
+    --card2: #1a1f35;
+    --border: #1e2540;
+    --text: #e8eaf6;
+    --muted: #6b7280;
+    --accent: #6C63FF;
+    --accent2: #a78bfa;
+    --green: #10b981;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --orange: #f97316;
+    --pink: #ec4899;
+    --cyan: #06b6d4;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+  /* HEADER */
+  .header { background: linear-gradient(135deg, #0f1220 0%, #1a1040 100%); border-bottom: 1px solid var(--border); padding: 20px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
+  .header-left h1 { font-size: 1.4rem; font-weight: 800; background: linear-gradient(90deg, #6C63FF, #a78bfa, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .header-left p { color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+  .header-right { display: flex; gap: 16px; align-items: center; }
+  .streak-badge { background: linear-gradient(135deg, #f59e0b, #ef4444); border-radius: 12px; padding: 8px 16px; font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 6px; }
+  .date-badge { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px; font-size: 0.85rem; color: var(--accent2); font-weight: 500; }
+
+  /* LAYOUT */
+  .main { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  /* CARDS */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+  .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .card-title { font-size: 0.85rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .section-title { font-size: 1rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+
+  /* DAILY CHECKLIST */
+  .checklist-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .check-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--card2); border-radius: 10px; border: 1px solid var(--border); cursor: pointer; transition: all 0.2s; }
+  .check-item:hover { border-color: var(--accent); }
+  .check-item.done { background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.3); }
+  .check-item input[type="checkbox"] { display: none; }
+  .checkmark { width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
+  .check-item.done .checkmark { background: var(--green); border-color: var(--green); }
+  .checkmark::after { content: '✓'; color: white; font-size: 11px; font-weight: 700; opacity: 0; transition: opacity 0.2s; }
+  .check-item.done .checkmark::after { opacity: 1; }
+  .check-label { font-size: 0.82rem; font-weight: 500; }
+
+  /* SUBJECTS */
+  .subject-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+  .subject-card { background: var(--card2); border: 1px solid var(--border); border-radius: 14px; padding: 16px; transition: all 0.25s; position: relative; overflow: hidden; }
+  .subject-card:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: 0 8px 30px rgba(108,99,255,0.12); }
+  .subject-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 14px 14px 0 0; }
+  .subject-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .subject-name { font-size: 0.85rem; font-weight: 700; }
+  .subject-emoji { font-size: 1.3rem; }
+  .progress-bar-wrap { background: rgba(255,255,255,0.06); border-radius: 100px; height: 6px; margin: 8px 0 10px; overflow: hidden; }
+  .progress-bar { height: 100%; border-radius: 100px; transition: width 0.5s ease; }
+  .subject-stats { display: flex; justify-content: space-between; align-items: center; }
+  .subject-count { font-size: 0.75rem; color: var(--muted); }
+  .subject-pct { font-size: 0.8rem; font-weight: 700; }
+  .progress-input { display: flex; gap: 6px; margin-top: 10px; }
+  .progress-input input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; color: var(--text); font-size: 0.78rem; font-family: 'Inter', sans-serif; }
+  .progress-input input:focus { outline: none; border-color: var(--accent); }
+  .btn-small { background: var(--accent); border: none; border-radius: 6px; padding: 5px 10px; color: white; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; font-family: 'Inter', sans-serif; }
+  .btn-small:hover { opacity: 0.85; }
+
+  /* CONSISTENCY CALENDAR */
+  .calendar-grid { display: flex; gap: 4px; flex-wrap: wrap; }
+  .cal-day { width: 20px; height: 20px; border-radius: 4px; background: var(--card2); transition: all 0.2s; cursor: pointer; position: relative; }
+  .cal-day:hover::after { content: attr(data-date); position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1a1f35; border: 1px solid var(--border); color: var(--text); font-size: 0.7rem; padding: 3px 7px; border-radius: 5px; white-space: nowrap; z-index: 10; }
+  .cal-day.level-1 { background: rgba(108,99,255,0.25); }
+  .cal-day.level-2 { background: rgba(108,99,255,0.5); }
+  .cal-day.level-3 { background: rgba(108,99,255,0.75); }
+  .cal-day.level-4 { background: #6C63FF; }
+  .cal-day.today { box-shadow: 0 0 0 2px var(--accent); }
+
+  /* DAILY LOG */
+  .log-textarea { width: 100%; background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; color: var(--text); font-size: 0.85rem; font-family: 'Inter', sans-serif; resize: vertical; min-height: 100px; transition: border-color 0.2s; }
+  .log-textarea:focus { outline: none; border-color: var(--accent); }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 10px; padding: 10px 20px; color: white; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(108,99,255,0.3); }
+  .log-history { margin-top: 14px; max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+  .log-entry { background: var(--card2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 0.8rem; }
+  .log-entry-date { color: var(--accent2); font-weight: 600; font-size: 0.75rem; margin-bottom: 3px; }
+
+  /* MOCK SCORES */
+  .score-list { display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; }
+  .score-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--card2); border-radius: 8px; border: 1px solid var(--border); font-size: 0.82rem; }
+  .score-val { font-weight: 700; }
+  .score-add { display: flex; gap: 8px; margin-bottom: 12px; }
+  .score-add input { flex: 1; background: var(--card2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-size: 0.82rem; font-family: 'Inter', sans-serif; }
+  .score-add input:focus { outline: none; border-color: var(--accent); }
+
+  /* SUMMARY STATS */
+  .stat-box { background: var(--card2); border-radius: 12px; border: 1px solid var(--border); padding: 16px; text-align: center; }
+  .stat-value { font-size: 1.8rem; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .stat-label { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+  @media (max-width: 768px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .header { flex-direction: column; gap: 12px; text-align: center; }
+    .subject-grid { grid-template-columns: 1fr 1fr; }
+    .checklist-grid { grid-template-columns: 1fr; }
+  }
+  .mt-20 { margin-top: 20px; }
+  .flex-end { display: flex; justify-content: flex-end; margin-top: 10px; }
+  .total-bar { background: var(--card); border-radius: 12px; padding: 16px 20px; border: 1px solid var(--border); margin-top: 16px; }
+  .total-label { font-size: 0.82rem; color: var(--muted); margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .overall-progress-wrap { background: rgba(255,255,255,0.06); border-radius: 100px; height: 10px; overflow: hidden; }
+  .overall-progress-bar { height: 100%; border-radius: 100px; background: linear-gradient(90deg, #6C63FF, #ec4899); transition: width 0.5s ease; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>📚 SSC Study Tracker 2026</h1>
+    <p>RWA Foundation Batch — नायक Mode 🔥</p>
+  </div>
+  <div class="header-right">
+    <div class="date-badge" id="todayDate">Today</div>
+    <div class="streak-badge">🔥 <span id="streakCount">0</span> Day Streak</div>
+    <button class="btn-small" style="background:var(--accent2);color:var(--bg);margin-left:8px;" onclick="exportData()">Export</button>
+    <button class="btn-small" style="background:var(--card2);border:1px solid var(--border);" onclick="importData()">Import</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- SUMMARY STATS -->
+  <div class="grid-3 mt-20" style="margin-bottom:20px;">
+    <div class="stat-box">
+      <div class="stat-value" id="totalWatched">0</div>
+      <div class="stat-label">Lectures Completed</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value" id="totalPct">0%</div>
+      <div class="stat-label">Syllabus Covered</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value" id="daysStudied">0</div>
+      <div class="stat-label">Study Days Logged</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+
+    <!-- DAILY CHECKLIST -->
+    <div class="card">
+      <div class="section-title">✅ Today's Non-Negotiables</div>
+      <div class="checklist-grid" id="checklistGrid">
+        <!-- Generated by JS -->
+      </div>
+      <div style="margin-top:12px; display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:0.78rem; color:var(--muted);" id="checkProgress">0/8 done</span>
+        <button class="btn-small" onclick="saveChecklist()">Save Today ✓</button>
+      </div>
+    </div>
+
+    <!-- DAILY LOG -->
+    <div class="card">
+      <div class="section-title">📝 Today's Study Log</div>
+      <textarea class="log-textarea" id="logText" placeholder="What did you study today? Topics covered, how many Qs solved, how you felt..."></textarea>
+      <div class="flex-end">
+        <button class="btn-primary" onclick="saveLog()">Log Today 📌</button>
+      </div>
+      <div class="log-history" id="logHistory"></div>
+    </div>
+
+  </div>
+
+  <!-- SUBJECT PROGRESS -->
+  <div class="card mt-20">
+    <div class="section-title">📊 Subject Progress Tracker</div>
+    <div class="subject-grid" id="subjectGrid">
+      <!-- Generated by JS -->
+    </div>
+    <div class="total-bar">
+      <div class="total-label">
+        <span>Overall Syllabus Progress</span>
+        <span id="overallLabel">0 / 962 lectures</span>
+      </div>
+      <div class="overall-progress-wrap">
+        <div class="overall-progress-bar" id="overallBar" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2 mt-20">
+
+    <!-- MOCK TEST SCORES -->
+    <div class="card">
+      <div class="section-title">🏆 Testbook Mock Scores</div>
+      <div class="score-add">
+        <input type="text" id="mockLabel" placeholder="Test name (e.g. Week 1 Full Mock)">
+        <input type="number" id="mockScore" placeholder="Score %" min="0" max="100" style="max-width:100px;">
+        <button class="btn-small" onclick="saveMock()">Add</button>
+      </div>
+      <div class="score-list" id="mockList"></div>
+    </div>
+
+    <!-- CONSISTENCY CALENDAR -->
+    <div class="card">
+      <div class="section-title">📅 Consistency Calendar</div>
+      <div style="font-size:0.75rem; color:var(--muted); margin-bottom:10px;">Each square = 1 day. Darker = more sessions logged.</div>
+      <div class="calendar-grid" id="calendarGrid"></div>
+      <div style="display:flex; gap:6px; align-items:center; margin-top:12px; font-size:0.72rem; color:var(--muted);">
+        Less
+        <div style="width:14px;height:14px;border-radius:3px;background:var(--card2);"></div>
+        <div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.25);"></div>
+        <div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.5);"></div>
+        <div style="width:14px;height:14px;border-radius:3px;background:#6C63FF;"></div>
+        More
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+// ===================== DATA =====================
+const SUBJECTS = [
+  { key: 'maths',    name: 'Mathematics',        emoji: '🔢', total: 183, color: '#6C63FF' },
+  { key: 'reasoning',name: 'Reasoning',           emoji: '🧠', total: 110, color: '#06b6d4' },
+  { key: 'history',  name: 'History',             emoji: '🏛️', total: 122, color: '#f59e0b' },
+  { key: 'english',  name: 'English / Grammar',   emoji: '📖', total: 85,  color: '#10b981' },
+  { key: 'vocab',    name: 'Vocabulary',           emoji: '💬', total: 89,  color: '#a78bfa' },
+  { key: 'geo',      name: 'Geography',            emoji: '🌍', total: 62,  color: '#34d399' },
+  { key: 'polity',   name: 'Polity',               emoji: '⚖️', total: 54,  color: '#f97316' },
+  { key: 'eco',      name: 'Economics',            emoji: '📈', total: 49,  color: '#ec4899' },
+  { key: 'physics',  name: 'Physics',              emoji: '⚡', total: 46,  color: '#60a5fa' },
+  { key: 'bio',      name: 'Biology',              emoji: '🦠', total: 44,  color: '#4ade80' },
+  { key: 'computer', name: 'Computer Awareness',   emoji: '💻', total: 43,  color: '#38bdf8' },
+  { key: 'chem',     name: 'Chemistry',            emoji: '🧪', total: 37,  color: '#fb923c' },
+  { key: 'gk',       name: 'Static GK',            emoji: '📚', total: 25,  color: '#c084fc' },
+  { key: 'ca',       name: 'Current Affairs',      emoji: '📰', total: 13,  color: '#fbbf24' },
+];
+
+const TOTAL_VIDEOS = 962;
+
+const CHECKLIST = [
+  'Watched today\'s Maths lecture',
+  'Solved 15+ Maths practice Qs',
+  'Watched Grammar/Subject lecture',
+  'Did topic-wise test on Testbook',
+  'Reviewed Vocab (8-10 words)',
+  'Did rolling drill (yesterday\'s topic)',
+  'Completed daily revision slot',
+  'Logged today in tracker',
+];
+
+// ===================== INIT =====================
+function load(key, def) {
+  try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch { return def; }
+}
+function save(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+let progress = load('ssc_progress', {});
+let logs = load('ssc_logs', []);
+let mocks = load('ssc_mocks', []);
+let checkData = load('ssc_checks', {});
+let studyDays = load('ssc_days', {});
+
+// ===================== DATE =====================
+const today = new Date().toISOString().slice(0, 10);
+document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+// ===================== STREAK =====================
+function calcStreak() {
+  const days = Object.keys(studyDays).sort();
+  if (!days.length) return 0;
+  let streak = 0;
+  let cur = new Date(); cur.setHours(0,0,0,0);
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(cur); d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    if (studyDays[key]) { streak++; } else if (i > 0) { break; }
+  }
+  return streak;
+}
+document.getElementById('streakCount').textContent = calcStreak();
+
+// ===================== CHECKLIST =====================
+function renderChecklist() {
+  const todayChecks = checkData[today] || {};
+  const grid = document.getElementById('checklistGrid');
+  grid.innerHTML = '';
+  CHECKLIST.forEach((label, i) => {
+    const done = !!todayChecks[i];
+    const div = document.createElement('div');
+    div.className = 'check-item' + (done ? ' done' : '');
+    div.innerHTML = `<div class="checkmark"></div><span class="check-label">${label}</span>`;
+    div.onclick = () => {
+      if (!checkData[today]) checkData[today] = {};
+      checkData[today][i] = !checkData[today][i];
+      save('ssc_checks', checkData);
+      renderChecklist();
+      updateProgress();
+    };
+    grid.appendChild(div);
+  });
+  const done = Object.values(checkData[today] || {}).filter(Boolean).length;
+  document.getElementById('checkProgress').textContent = `${done}/${CHECKLIST.length} done`;
+}
+
+function saveChecklist() {
+  studyDays[today] = true;
+  save('ssc_days', studyDays);
+  document.getElementById('streakCount').textContent = calcStreak();
+  updateProgress();
+  renderCalendar();
+  alert('✅ Today marked as studied! Keep going 🔥');
+}
+
+// ===================== SUBJECTS =====================
+function renderSubjects() {
+  const grid = document.getElementById('subjectGrid');
+  grid.innerHTML = '';
+  SUBJECTS.forEach(s => {
+    const done = progress[s.key] || 0;
+    const pct = Math.min(100, Math.round((done / s.total) * 100));
+    const card = document.createElement('div');
+    card.className = 'subject-card';
+    card.style.setProperty('--subcolor', s.color);
+    card.innerHTML = `
+      <style>.subject-card[data-key="${s.key}"]::before { background: ${s.color}; }</style>
+      <div class="subject-top">
+        <span class="subject-name" style="color:${s.color}">${s.name}</span>
+        <span class="subject-emoji">${s.emoji}</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" style="width:${pct}%; background:${s.color};"></div>
+      </div>
+      <div class="subject-stats">
+        <span class="subject-count">${done} / ${s.total} lectures</span>
+        <span class="subject-pct" style="color:${s.color}">${pct}%</span>
+      </div>
+      <div class="progress-input">
+        <input type="number" id="inp_${s.key}" value="${done}" min="0" max="${s.total}" placeholder="Watched">
+        <button class="btn-small" style="background:${s.color}" onclick="updateSubject('${s.key}', '${s.total}')">Set</button>
+      </div>
+    `;
+    card.setAttribute('data-key', s.key);
+    grid.appendChild(card);
+  });
+}
+
+function updateSubject(key, total) {
+  const val = parseInt(document.getElementById('inp_' + key).value) || 0;
+  progress[key] = Math.min(parseInt(total), Math.max(0, val));
+  save('ssc_progress', progress);
+  renderSubjects();
+  updateProgress();
+}
+
+function updateProgress() {
+  const totalDone = Object.values(progress).reduce((a, b) => a + b, 0);
+  const pct = Math.round((totalDone / TOTAL_VIDEOS) * 100);
+  document.getElementById('totalWatched').textContent = totalDone;
+  document.getElementById('totalPct').textContent = pct + '%';
+  document.getElementById('daysStudied').textContent = Object.keys(studyDays).length;
+  document.getElementById('overallLabel').textContent = `${totalDone} / ${TOTAL_VIDEOS} lectures`;
+  document.getElementById('overallBar').style.width = pct + '%';
+}
+
+// ===================== LOG =====================
+function saveLog() {
+  const txt = document.getElementById('logText').value.trim();
+  if (!txt) return;
+  logs.unshift({ date: today, text: txt });
+  if (logs.length > 50) logs = logs.slice(0, 50);
+  save('ssc_logs', logs);
+  studyDays[today] = true;
+  save('ssc_days', studyDays);
+  document.getElementById('logText').value = '';
+  renderLog();
+  document.getElementById('streakCount').textContent = calcStreak();
+  document.getElementById('daysStudied').textContent = Object.keys(studyDays).length;
+  renderCalendar();
+}
+
+function renderLog() {
+  const hist = document.getElementById('logHistory');
+  hist.innerHTML = '';
+  logs.slice(0, 10).forEach(l => {
+    const d = document.createElement('div');
+    d.className = 'log-entry';
+    d.innerHTML = `<div class="log-entry-date">📅 ${new Date(l.date + 'T12:00:00').toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short'})}</div>${l.text}`;
+    hist.appendChild(d);
+  });
+}
+
+// ===================== MOCKS =====================
+function saveMock() {
+  const label = document.getElementById('mockLabel').value.trim();
+  const score = parseFloat(document.getElementById('mockScore').value);
+  if (!label || isNaN(score)) return;
+  mocks.unshift({ date: today, label, score });
+  save('ssc_mocks', mocks);
+  document.getElementById('mockLabel').value = '';
+  document.getElementById('mockScore').value = '';
+  renderMocks();
+}
+
+function renderMocks() {
+  const list = document.getElementById('mockList');
+  list.innerHTML = '';
+  if (!mocks.length) { list.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;text-align:center;padding:20px;">No scores yet. Give your first Testbook mock! 💪</div>'; return; }
+  mocks.slice(0, 15).forEach(m => {
+    const color = m.score >= 70 ? 'var(--green)' : m.score >= 50 ? 'var(--yellow)' : 'var(--red)';
+    const d = document.createElement('div');
+    d.className = 'score-item';
+    d.innerHTML = `
+      <div>
+        <div style="font-weight:600;">${m.label}</div>
+        <div style="color:var(--muted);font-size:0.72rem;">${new Date(m.date + 'T12:00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div>
+      </div>
+      <div class="score-val" style="color:${color}">${m.score}%</div>
+    `;
+    list.appendChild(d);
+  });
+}
+
+// ===================== CALENDAR =====================
+function renderCalendar() {
+  const grid = document.getElementById('calendarGrid');
+  grid.innerHTML = '';
+  const startDate = new Date('2026-04-01');
+  const days = 120;
+  for (let i = 0; i < days; i++) {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + i);
+    const key = d.toISOString().slice(0, 10);
+    const div = document.createElement('div');
+    div.className = 'cal-day';
+    const isToday = key === today;
+    if (isToday) div.classList.add('today');
+    if (studyDays[key]) {
+      const checks = checkData[key] ? Object.values(checkData[key]).filter(Boolean).length : 0;
+      if (checks >= 6) div.classList.add('level-4');
+      else if (checks >= 4) div.classList.add('level-3');
+      else if (checks >= 2) div.classList.add('level-2');
+      else div.classList.add('level-1');
+    }
+    div.setAttribute('data-date', key);
+    div.title = key;
+    div.onclick = () => {
+      if (key === today) { studyDays[today] = true; save('ssc_days', studyDays); renderCalendar(); document.getElementById('streakCount').textContent = calcStreak(); }
+    };
+    grid.appendChild(div);
+  }
+}
+
+// ===================== EXPORT/IMPORT =====================
+function exportData() {
+  const data = {
+    progress: progress,
+    logs: logs,
+    mocks: mocks,
+    checkData: checkData,
+    studyDays: studyDays
+  };
+  try {
+    const str = btoa(encodeURIComponent(JSON.stringify(data)));
+    navigator.clipboard.writeText(str).then(() => {
+      alert('Data copied to clipboard! Send this code to your phone/tablet and paste it in the Import section.');
+    }).catch(err => {
+      prompt('Copy this code:', str);
+    });
+  } catch(e) {
+    alert('Error exporting data: ' + e.message);
+  }
+}
+
+function importData() {
+  const str = prompt('Paste your sync code here:');
+  if (!str) return;
+  try {
+    const data = JSON.parse(decodeURIComponent(atob(str)));
+    if (data && typeof data === 'object') {
+      if (data.progress) save('ssc_progress', data.progress);
+      if (data.logs) save('ssc_logs', data.logs);
+      if (data.mocks) save('ssc_mocks', data.mocks);
+      if (data.checkData) save('ssc_checks', data.checkData);
+      if (data.studyDays) save('ssc_days', data.studyDays);
+      alert('Data imported successfully! Reloading...');
+      location.reload();
+    } else {
+      alert('Invalid sync code format.');
+    }
+  } catch(e) {
+    alert('Error reading sync code. Make sure you copied it entirely.');
+  }
+}
+
+// ===================== BOOT =====================
+renderChecklist();
+renderSubjects();
+renderLog();
+renderMocks();
+renderCalendar();
+updateProgress();
+</script>
+</body>
+</html>
