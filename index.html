@@ -138,7 +138,7 @@
     <div class="date-badge" id="todayDate">Today</div>
     <div class="streak-badge">🔥 <span id="streakCount">0</span> Day Streak</div>
     <button class="btn-small" style="background:var(--accent2);color:var(--bg);margin-left:8px;" onclick="syncToCloud()">☁️ Push</button>
-    <button class="btn-small" style="background:var(--card2);border:1px solid var(--border);" onclick="pullFromCloud()">☁️ Pull</button>
+    <button class="btn-small" style="background:var(--card2);border:1px solid var(--border);" onclick="pullFromCloud()">🔄 Refresh</button>
     <button class="btn-small" style="background:var(--card2);border:1px solid var(--border);" onclick="openSettings()">⚙️</button>
   </div>
 </div>
@@ -495,10 +495,11 @@ function renderCalendar() {
 
 // ===================== CLOUD SYNC =====================
 const GIST_FILENAME = 'sync.json';
+const PUBLIC_GIST_ID = 'c01cb36ae8354fcdad5fa45cdcf05f9f';
 
 function openSettings() {
   document.getElementById('ghToken').value = load('ssc_gh_token', '');
-  document.getElementById('gistId').value = load('ssc_gist_id', 'a8b7f303403ea86250949ff9f300b993');
+  document.getElementById('gistId').value = load('ssc_gist_id', PUBLIC_GIST_ID);
   document.getElementById('settingsModal').style.display = 'flex';
 }
 
@@ -515,7 +516,7 @@ function saveSettings() {
 
 async function syncToCloud() {
   const token = load('ssc_gh_token', '');
-  const gistId = load('ssc_gist_id', 'a8b7f303403ea86250949ff9f300b993');
+  const gistId = load('ssc_gist_id', PUBLIC_GIST_ID);
   if (!token || !gistId) return alert('Please configure Settings (⚙️) first and provide your GitHub token!');
 
   const btn = event.currentTarget;
@@ -544,7 +545,7 @@ async function syncToCloud() {
 
 async function pullFromCloud() {
   const token = load('ssc_gh_token', '');
-  const gistId = load('ssc_gist_id', 'a8b7f303403ea86250949ff9f300b993');
+  const gistId = load('ssc_gist_id', PUBLIC_GIST_ID);
   if (!gistId) return alert('Please configure Settings (⚙️) first!');
 
   const btn = event.currentTarget;
@@ -577,6 +578,34 @@ async function pullFromCloud() {
   }
 }
 
+async function autoLoadFromCloud() {
+  try {
+    const gistId = load('ssc_gist_id', PUBLIC_GIST_ID);
+    const res = await fetch(`https://api.github.com/gists/${gistId}?t=${Date.now()}`, { cache: 'no-store' });
+    if (!res.ok) return;
+    const gist = await res.json();
+    const content = gist.files[GIST_FILENAME]?.content;
+    if (!content || content === '{}') return;
+
+    const data = JSON.parse(content);
+    if (data.progress) progress = data.progress;
+    if (data.logs) logs = data.logs;
+    if (data.mocks) mocks = data.mocks;
+    if (data.checkData) checkData = data.checkData;
+    if (data.studyDays) studyDays = data.studyDays;
+    
+    // Re-render immediately without needing a reload
+    renderChecklist();
+    renderSubjects();
+    renderLog();
+    renderMocks();
+    renderCalendar();
+    updateProgress();
+  } catch (e) {
+    console.log("Silent auto-pull failed", e);
+  }
+}
+
 // ===================== BOOT =====================
 renderChecklist();
 renderSubjects();
@@ -584,6 +613,9 @@ renderLog();
 renderMocks();
 renderCalendar();
 updateProgress();
+
+// Auto pull live data on startup
+autoLoadFromCloud();
 </script>
 </body>
 </html>
